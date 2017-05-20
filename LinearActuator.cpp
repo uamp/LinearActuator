@@ -2,16 +2,17 @@
 #include "LinearActuator.h"
 
 
-LinearActuator::LinearActuator(uint8_t _pin_A, uint8_t _pin_B, uint8_t _pin_enable, uint8_t _pin_current_sense){ 	
-	pin_A=_pin_A;
-	pin_B=_pin_B;
-	pin_enable=_pin_enable;
-	pin_current_sense=_pin_current_sense;
+LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinEnable, uint8_t pinCurrentSense){ 	
+	pin_A=pinA;
+	pin_B=pinB;
+	pin_enable=pinEnable;
+	pin_current_sense=pinCurrentSense;
 	pinMode(pin_A,OUTPUT);
 	pinMode(pin_B,OUTPUT);
 	pinMode(pin_enable,OUTPUT);
 	pinMode(pin_current_sense,INPUT);
 	motor_delay=500;
+	throw_time=1000;
 }
 
 void LinearActuator::motorControl(bool motor_on, bool direction=true){
@@ -80,12 +81,12 @@ void LinearActuator::calibrate(){
 	
 }
 
-void LinearActuator::setStallCurrent(uint16_t _stall_current){
-	if(_stall_current<1024) stall_current=_stall_current;
+void LinearActuator::setStallCurrent(uint16_t stallCurrent){
+	if(stallCurrent<1024) stall_current=stallCurrent;
 }
 
-void LinearActuator::setThrowTime(uint32_t _throw_time){
-	throw_time=_throw_time;
+void LinearActuator::setThrowTime(uint32_t throwTime){
+	throw_time=throwTime;
 }
 
 LinearActuator::~LinearActuator(){

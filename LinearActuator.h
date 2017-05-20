@@ -19,14 +19,14 @@ private:
 	uint16_t readCurrent();
 
 public:
-	LinearActuator(uint8_t _pin_A, uint8_t _pin_B, uint8_t _pin_enable, uint8_t _pin_current_sense); 
+	LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinEnable, uint8_t pinCurrentSense); 
 	~LinearActuator();
 	
 	void setPosition(uint8_t demanded_position); //0 being one end, 255 being the other
 	uint8_t getPosition();
 	void calibrate();
-	void setStallCurrent(uint16_t _stall_current);
-	void setThrowTime(uint32_t _throw_time);
+	void setStallCurrent(uint16_t stallCurrent);
+	void setThrowTime(uint32_t throwTime);
 
 	
 };
