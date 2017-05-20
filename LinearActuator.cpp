@@ -26,33 +26,39 @@ uint16_t LinearActuator::readCurrent(){
 }
 
 
-void LinearActuator::setPosition(uint8_t demanded_position){
+void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 	uint32_t time_start,travel_time;
 	bool direction;
+	int current_draw=0;
 
 	if(demanded_position==current_position) {
 		return;
 	}
 	if(demanded_position>current_position){
 		direction=true;
-		travel_time=(demanded_position-current_position)*throw_time/255;
+		travel_time=(demanded_position-current_position)*throw_time/256;
 	}
 	if(demanded_position<current_position){
 		direction=true;
-		travel_time=(current_position-demanded_position)*throw_time/255;
+		travel_time=(current_position-demanded_position)*throw_time/256;
 	}
+	if(demanded_position==0 || demanded_position==255) travel_time=throw_time+2000; //ensures it reaches the end stop from whereever it is
 
 	time_start=millis();
 	motorControl(true,direction); //motoring
 	delay(motor_delay);
+
 	do{
-	}while(readCurrent() < stall_current && (millis()-time_start)<(travel_time));
+		current_draw=readCurrent();
+	}while((current_draw < stall_current) && ((millis()-time_start)<travel_time)); //stop either at stall current or timeout (estimate of time needed for distance travel)
+
+	motorControl(false);//stop motor
 	current_position=demanded_position; //crude, refined below
-	if(readCurrent()>stall_current){ //update position if end-stop reached
-		if(direction==true) current_position=255;
+	if(current_draw>=stall_current){ //update position if end-stop reached
+		if(direction==true) current_position=255;  //determine which end
 		if(direction==false) current_position=0;
 	}
-	motorControl(false);//stop motor
+	
 	
 }
 
@@ -60,8 +66,8 @@ uint8_t LinearActuator::getPosition(){
 	return current_position;
 }
 
-void LinearActuator::calibrate(){
-
+void LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
+	
 	uint32_t time_start;
 	time_start=millis();
 	

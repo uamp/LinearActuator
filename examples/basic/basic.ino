@@ -14,5 +14,16 @@ void setup(){
   la.setPosition(0);
 }
 
-int main(){
+void loop(){
+  while (Serial.available() > 0) {
+  
+      // look for the next valid integer in the incoming serial stream:
+      uint8_t demand_position = Serial.parseInt();
+  
+      if (Serial.read() == '\n') {
+        Serial.println(demand_position);
+        la.setPosition(demand_position);
+      }
+    }
+    
 }
