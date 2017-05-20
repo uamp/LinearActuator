@@ -10,7 +10,7 @@ private:
 	uint8_t pin_enable;
 	uint8_t pin_current_sense;
 	
-	uint16_t stall_current
+	uint16_t stall_current;
 	uint8_t current_position;
 	uint32_t throw_time;
 	uint16_t motor_delay;
