@@ -24,10 +24,10 @@ public:
 	
 	void setPosition(uint8_t demanded_position); //0 being one end, 255 being the other
 	uint8_t getPosition();
-	void calibrate();
+	uint32_t calibrate();
 	void setStallCurrent(uint16_t stallCurrent);
 	void setThrowTime(uint32_t throwTime);
-
+	uint32_t getThrowTime();
 	
 };
 

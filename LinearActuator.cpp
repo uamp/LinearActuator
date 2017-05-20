@@ -66,7 +66,7 @@ uint8_t LinearActuator::getPosition(){
 	return current_position;
 }
 
-void LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
+uint32_t LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
 	
 	uint32_t time_start;
 	time_start=millis();
@@ -85,6 +85,8 @@ void LinearActuator::calibrate(){    //if using battery, as battery drop, throw 
 	throw_time=(millis()-time_start);
 	current_position=0;
 	
+	return throw_time;	
+
 }
 
 void LinearActuator::setStallCurrent(uint16_t stallCurrent){
@@ -94,6 +96,11 @@ void LinearActuator::setStallCurrent(uint16_t stallCurrent){
 void LinearActuator::setThrowTime(uint32_t throwTime){
 	throw_time=throwTime;
 }
+
+uint32_t LinearActuator::getThrowTime(){
+	return throw_time;
+}
+
 
 LinearActuator::~LinearActuator(){
 }
