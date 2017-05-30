@@ -1,13 +1,13 @@
 #ifndef __LA_H_INCLUDED__
 #define __LA_H_INCLUDED__
 
-
+//to do: capture two different times - one for motoring in, one for motoring out
 
 class LinearActuator{
 private:
 	uint8_t pin_A;
 	uint8_t pin_B;
-	uint8_t pin_enable;
+	//uint8_t pin_enable;
 	uint8_t pin_current_sense;
 	
 	uint16_t stall_current;
@@ -19,7 +19,7 @@ private:
 	uint16_t readCurrent();
 
 public:
-	LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinEnable, uint8_t pinCurrentSense); 
+	LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense); 
 	~LinearActuator();
 	
 	void setPosition(uint8_t demanded_position); //0 being one end, 255 being the other

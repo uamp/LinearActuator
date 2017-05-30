@@ -2,27 +2,38 @@
 #include "LinearActuator.h"
 
 
-LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinEnable, uint8_t pinCurrentSense){ 	
+LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense){ 	
 	pin_A=pinA;
 	pin_B=pinB;
-	pin_enable=pinEnable;
+	//pin_enable=pinEnable;
 	pin_current_sense=pinCurrentSense;
 	pinMode(pin_A,OUTPUT);
 	pinMode(pin_B,OUTPUT);
-	pinMode(pin_enable,OUTPUT);
+	//pinMode(pin_enable,OUTPUT);
 	pinMode(pin_current_sense,INPUT);
 	motor_delay=500;
 	throw_time=1000;
+	analogReference(INTERNAL);
 }
 
 void LinearActuator::motorControl(bool motor_on, bool direction=true){
-	digitalWrite(pin_enable,motor_on);
-  	digitalWrite(pin_A,direction);
-  	digitalWrite(pin_B,!direction);
+	//if(pin_enable!=0) digitalWrite(pin_enable,motor_on);
+	if(motor_on) {
+		digitalWrite(pin_A,direction);
+		digitalWrite(pin_B,!direction);
+	} else {
+		digitalWrite(pin_A,LOW);
+		digitalWrite(pin_B,LOW);
+	}
 }
 
 uint16_t LinearActuator::readCurrent(){  
-	return analogRead(pin_current_sense);
+	uint16_t voltage;
+	uint16_t current;
+	voltage=analogRead(pin_current_sense);
+	current=voltage;  //*1000/1024;  //2.2k resistor means 1.1v per A.  Internal ref voltage is 1.1v.  Therefore 0-1023 is an 1Amp. 
+	Serial.println(current);
+	return current;
 }
 
 
@@ -39,7 +50,7 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 		travel_time=(demanded_position-current_position)*throw_time/256;
 	}
 	if(demanded_position<current_position){
-		direction=true;
+		direction=false;
 		travel_time=(current_position-demanded_position)*throw_time/256;
 	}
 	if(demanded_position==0 || demanded_position==255) travel_time=throw_time+2000; //ensures it reaches the end stop from whereever it is
