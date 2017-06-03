@@ -12,7 +12,8 @@ LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSen
 	//pinMode(pin_enable,OUTPUT);
 	pinMode(pin_current_sense,INPUT);
 	motor_delay=500;
-	throw_time=1000;
+	throw_time1=1000;
+	throw_time2=1000;
 	analogReference(INTERNAL);
 }
 
