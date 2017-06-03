@@ -47,13 +47,13 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 	}
 	if(demanded_position>current_position){
 		direction=true;
-		travel_time=(demanded_position-current_position)*throw_time/256;
+		travel_time=(demanded_position-current_position)*throw_time1/256;
 	}
 	if(demanded_position<current_position){
 		direction=false;
-		travel_time=(current_position-demanded_position)*throw_time/256;
+		travel_time=(current_position-demanded_position)*throw_time2/256;
 	}
-	if(demanded_position==0 || demanded_position==255) travel_time=throw_time+2000; //ensures it reaches the end stop from whereever it is
+	if(demanded_position==0 || demanded_position==255) travel_time=travel_time+5000; //ensures it reaches the end stop from whereever it is
 
 	time_start=millis();
 	motorControl(true,direction); //motoring
@@ -77,26 +77,36 @@ uint8_t LinearActuator::getPosition(){
 	return current_position;
 }
 
-uint32_t LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
+void LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
 	
 	uint32_t time_start;
 	time_start=millis();
-	
+
+	//reset motor position to be fully wound in	
+	motorControl(true,false); //motoring back
+	delay(motor_delay);
+	do{
+	}while(readCurrent() < stall_current && (millis()-time_start)<(1.5*throw_time2));
+
+	//wind out and measure throw_time1
+	time_start=millis();
 	motorControl(true,true); //motoring out
 	delay(motor_delay);
 	do{
-	}while(readCurrent() < stall_current && (millis()-time_start)<(2*throw_time));
+	}while(readCurrent() < stall_current && (millis()-time_start)<(1.5*throw_time1));
+	motorControl(false); //stop motor
+	throw_time1=(millis()-time_start);
 
+	//wind back in an measure throw_time2
 	time_start=millis();
 	motorControl(true,false); //motoring back in
 	delay(motor_delay);
 	do{
-	}while(readCurrent() < stall_current && (millis()-time_start)<(2*throw_time));
+	}while(readCurrent() < stall_current && (millis()-time_start)<(1.5*throw_time2));
 	motorControl(false); //stop motor
-	throw_time=(millis()-time_start);
-	current_position=0;
-	
-	return throw_time;	
+	throw_time2=(millis()-time_start);
+
+	current_position=0;  //set position to zero now fully wound back in
 
 }
 
@@ -104,13 +114,11 @@ void LinearActuator::setStallCurrent(uint16_t stallCurrent){
 	if(stallCurrent<1024) stall_current=stallCurrent;
 }
 
-void LinearActuator::setThrowTime(uint32_t throwTime){
-	throw_time=throwTime;
+void LinearActuator::setThrowTime(uint32_t throwTime1, uint32_t throwTime2){
+	throw_time1=throwTime1;
+	throw_time2=throwTime2;
 }
 
-uint32_t LinearActuator::getThrowTime(){
-	return throw_time;
-}
 
 
 LinearActuator::~LinearActuator(){

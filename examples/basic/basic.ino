@@ -9,7 +9,7 @@ void setup(){
   Serial.begin(9600);
   pinMode(7,OUTPUT);   //current sense shutdown pin on TRV hardware
   digitalWrite(7,LOW);  //needs pulling low
-  la.setThrowTime(10000); //ms
+  la.setThrowTime(10000,10000); //ms
   la.setStallCurrent(190); //mA
   la.calibrate(); //ends at 0
   delay(5000);

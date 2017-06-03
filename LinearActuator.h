@@ -12,7 +12,8 @@ private:
 	
 	uint16_t stall_current;
 	uint8_t current_position;
-	uint32_t throw_time;
+	uint32_t throw_time1; //when direction=true
+	uint32_t throw_time2; //when direction=false
 	uint16_t motor_delay;
 	
 	void motorControl(bool motor_on, bool direction);
@@ -24,10 +25,9 @@ public:
 	
 	void setPosition(uint8_t demanded_position); //0 being one end, 255 being the other
 	uint8_t getPosition();
-	uint32_t calibrate();
+	void calibrate();
 	void setStallCurrent(uint16_t stallCurrent);
-	void setThrowTime(uint32_t throwTime);
-	uint32_t getThrowTime();
+	void setThrowTime(uint32_t throwTime1, uint32_t throwTime2);
 	
 };
 
