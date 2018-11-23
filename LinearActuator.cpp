@@ -1,8 +1,9 @@
 #include "Arduino.h"
 #include "LinearActuator.h"
+//#include <math.h>
 
 
-LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense){ 	
+LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense){
 	pin_A=pinA;
 	pin_B=pinB;
 	//pin_enable=pinEnable;
@@ -11,9 +12,13 @@ LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSen
 	pinMode(pin_B,OUTPUT);
 	//pinMode(pin_enable,OUTPUT);
 	pinMode(pin_current_sense,INPUT);
-	motor_delay=500;
-	throw_time1=1000;
-	throw_time2=1000;
+	motor_delay=1000; //delay after motor starts before first current reading (to allow it to overcome initial friction)
+	// OUT: motoring out 0->100 direction true (throwTime1 & stallCurrent1)
+	// IN: motoring in 100->0 direction false (throwTime2 & stallCurrent2)
+	throw_time1=10000;
+	throw_time2=10000;
+	stall_current1=100;
+	stall_current2=100;
 	analogReference(INTERNAL);
 }
 
@@ -28,18 +33,20 @@ void LinearActuator::motorControl(bool motor_on, bool direction=true){
 	}
 }
 
-uint16_t LinearActuator::readCurrent(){  
-	uint16_t voltage;
+uint16_t LinearActuator::readCurrent(){
+	uint16_t voltage, voltage1,voltage2,voltage3;
 	uint16_t current;
 	voltage=analogRead(pin_current_sense);
-	current=voltage;  //*1000/1024;  //2.2k resistor means 1.1v per A.  Internal ref voltage is 1.1v.  Therefore 0-1023 is an 1Amp. 
+	//voltage2=analogRead(pin_current_sense);
+	//voltage=min(voltage1,voltage2);
+	current=voltage;  //*1000/1024;  //2.2k resistor means 1.1v per A.  Internal ref voltage is 1.1v.  Therefore 0-1023 is an 1Amp.
 	Serial.println(current);
 	return current;
 }
 
 
 void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
-	uint32_t time_start,travel_time;
+	uint32_t time_start,travel_time,stall_current;
 	bool direction;
 	int current_draw=0;
 
@@ -49,12 +56,14 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 	if(demanded_position>current_position){
 		direction=true;
 		travel_time=(demanded_position-current_position)*throw_time1/256;
+		stall_current=stall_current1;
 	}
 	if(demanded_position<current_position){
 		direction=false;
 		travel_time=(current_position-demanded_position)*throw_time2/256;
+		stall_current=stall_current2;
 	}
-	if(demanded_position==0 || demanded_position==255) travel_time=travel_time+5000; //ensures it reaches the end stop from whereever it is
+	if(demanded_position==0 || demanded_position==255) travel_time=travel_time+3000; //ensures it reaches the end stop from whereever it is
 
 	time_start=millis();
 	motorControl(true,direction); //motoring
@@ -70,8 +79,8 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 		if(direction==true) current_position=255;  //determine which end
 		if(direction==false) current_position=0;
 	}
-	
-	
+
+
 }
 
 uint8_t LinearActuator::getPosition(){
@@ -79,22 +88,24 @@ uint8_t LinearActuator::getPosition(){
 }
 
 void LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
-	
+
 	uint32_t time_start;
 	time_start=millis();
+	// OUT: motoring out 0->100 direction true (throwTime1 & stallCurrent1)
+	// IN: motoring in 100->0 direction false (throwTime2 & stallCurrent2)
 
-	//reset motor position to be fully wound in	
+	//reset motor position to be fully wound in
 	motorControl(true,false); //motoring back
 	delay(motor_delay);
 	do{
-	}while(readCurrent() < stall_current && (millis()-time_start)<(1.5*throw_time2));
+	}while(readCurrent() < stall_current2 && (millis()-time_start)<(1.5*throw_time2));
 
 	//wind out and measure throw_time1
 	time_start=millis();
 	motorControl(true,true); //motoring out
 	delay(motor_delay);
 	do{
-	}while(readCurrent() < stall_current && (millis()-time_start)<(1.5*throw_time1));
+	}while(readCurrent() < stall_current1 && (millis()-time_start)<(1.5*throw_time1));
 	motorControl(false); //stop motor
 	throw_time1=(millis()-time_start);
 
@@ -103,7 +114,7 @@ void LinearActuator::calibrate(){    //if using battery, as battery drop, throw 
 	motorControl(true,false); //motoring back in
 	delay(motor_delay);
 	do{
-	}while(readCurrent() < stall_current && (millis()-time_start)<(1.5*throw_time2));
+	}while(readCurrent() < stall_current2 && (millis()-time_start)<(1.5*throw_time2));
 	motorControl(false); //stop motor
 	throw_time2=(millis()-time_start);
 
@@ -111,8 +122,9 @@ void LinearActuator::calibrate(){    //if using battery, as battery drop, throw 
 
 }
 
-void LinearActuator::setStallCurrent(uint16_t stallCurrent){
-	if(stallCurrent<1024) stall_current=stallCurrent;
+void LinearActuator::setStallCurrent(uint16_t stallCurrent1, uint16_t stallCurrent2){
+	if(stallCurrent1<1024) stall_current1=stallCurrent1;
+	if(stallCurrent2<1024) stall_current2=stallCurrent2;
 }
 
 void LinearActuator::setThrowTime(uint32_t throwTime1, uint32_t throwTime2){
@@ -120,8 +132,11 @@ void LinearActuator::setThrowTime(uint32_t throwTime1, uint32_t throwTime2){
 	throw_time2=throwTime2;
 }
 
+uint16_t LinearActuator::getStallCurrent(uint8_t stallCurrentSelect){
+	if(stallCurrentSelect==1) return stall_current1;
+	if(stallCurrentSelect==2) return stall_current2;
 
+}
 
 LinearActuator::~LinearActuator(){
 }
-
