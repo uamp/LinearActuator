@@ -17,6 +17,11 @@ private:
 	uint32_t throw_time1; //when direction=true
 	uint32_t throw_time2; //when direction=false
 	uint16_t motor_delay;
+	uint32_t last_throw_time;  //used to get results at the end of last travel
+	uint16_t last_current; //used to get results at the end of last travel
+	bool last_throw_timeout; //true if throwtime reached, false if stall current reached
+	bool last_direction;
+
 
 	void motorControl(bool motor_on, bool direction);
 	uint16_t readCurrent();
@@ -27,11 +32,12 @@ public:
 
 	void setPosition(uint8_t demanded_position); //0 being one end, 255 being the other
 	uint8_t getPosition();
+	void getThrowResults(bool & timeout, uint32_t & throwTime, int16_t & finalCurrent); //final current sign dependant on direction
 	void calibrate();
 	void setStallCurrent(uint16_t stallCurrent1, uint16_t stallCurrent2); //out/in
 	uint16_t getStallCurrent(uint8_t stallCurrentSelect); //1 or 2
 	void setThrowTime(uint32_t throwTime1, uint32_t throwTime2); //out/in
-
+  uint32_t getThrowTime(uint8_t throwTimeSelect); //1 or 2
 };
 
 #endif // __LA_H_INCLUDED__

@@ -1,6 +1,6 @@
 #include "Arduino.h"
 #include "LinearActuator.h"
-//#include <math.h>
+#include <math.h>
 
 
 LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense){
@@ -36,16 +36,15 @@ void LinearActuator::motorControl(bool motor_on, bool direction=true){
 uint16_t LinearActuator::readCurrent(){
 	uint16_t voltage, voltage1,voltage2,voltage3;
 	uint16_t current;
-	voltage=analogRead(pin_current_sense);
-	//voltage2=analogRead(pin_current_sense);
-	//voltage=min(voltage1,voltage2);
+	voltage1=analogRead(pin_current_sense);
+	voltage2=analogRead(pin_current_sense);
+	voltage=min(voltage1,voltage2);//ensure we have two consecutive readings the same
 	current=voltage;  //*1000/1024;  //2.2k resistor means 1.1v per A.  Internal ref voltage is 1.1v.  Therefore 0-1023 is an 1Amp.
-	Serial.println(current);
 	return current;
 }
 
 
-void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
+void LinearActuator::setPosition(uint8_t demanded_position){ // demanded_position=0-255, returns +ve if out, -ve if in and value is final stall current
 	uint32_t time_start,travel_time,stall_current;
 	bool direction;
 	int current_draw=0;
@@ -63,7 +62,7 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 		travel_time=(current_position-demanded_position)*throw_time2/256;
 		stall_current=stall_current2;
 	}
-	if(demanded_position==0 || demanded_position==255) travel_time=travel_time+3000; //ensures it reaches the end stop from whereever it is
+	if(demanded_position==0 || demanded_position==255) travel_time=travel_time+1500; //ensures it reaches the end stop from whereever it is
 
 	time_start=millis();
 	motorControl(true,direction); //motoring
@@ -73,14 +72,35 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // 0-255
 		current_draw=readCurrent();
 	}while((current_draw < stall_current) && ((millis()-time_start)<travel_time)); //stop either at stall current or timeout (estimate of time needed for distance travel)
 
+	if(current_draw>=stall_current) {
+		last_throw_timeout=false;
+	} else {
+		last_throw_timeout=true;
+	}
+
 	motorControl(false);//stop motor
 	current_position=demanded_position; //crude, refined below
 	if(current_draw>=stall_current){ //update position if end-stop reached
-		if(direction==true) current_position=255;  //determine which end
+		if(direction==true) current_position=255; 
 		if(direction==false) current_position=0;
 	}
 
+	last_direction = direction;
+	last_current = current_draw;
+	last_throw_time = millis()-time_start;
 
+	//return direction ? current_draw : -current_draw;
+
+}
+
+void LinearActuator::getThrowResults(bool & timeout, uint32_t & throwTime, int16_t & finalCurrent){ //final sign dependant on direction
+    timeout=last_throw_timeout;
+		throwTime=last_throw_time;
+		if(last_direction){
+			finalCurrent=  last_current;
+		}else{
+			finalCurrent= -last_current;
+		}
 }
 
 uint8_t LinearActuator::getPosition(){
@@ -130,6 +150,11 @@ void LinearActuator::setStallCurrent(uint16_t stallCurrent1, uint16_t stallCurre
 void LinearActuator::setThrowTime(uint32_t throwTime1, uint32_t throwTime2){
 	throw_time1=throwTime1;
 	throw_time2=throwTime2;
+}
+
+uint32_t LinearActuator::getThrowTime(uint8_t throwTimeSelect){
+	if(throwTimeSelect==1) return throw_time1;
+	if(throwTimeSelect==2) return throw_time2;
 }
 
 uint16_t LinearActuator::getStallCurrent(uint8_t stallCurrentSelect){
