@@ -83,18 +83,6 @@ void LinearActuator::setPosition(uint8_t demanded_position){ // demanded_positio
 		stall_current=stall_current2;
 	}
 	if(demanded_position==0 || demanded_position==100) travel_time=travel_time+1000; //ensures it reaches the end stop from whereever it is
-	Serial.print(F("Demanded position: "));
-	Serial.println(demanded_position);
-	Serial.print(F("Current position: "));
-	Serial.println(current_position);
-	Serial.print(F("TT1/2: "));
-	Serial.print(throw_time1);
-	Serial.print(F("/"));
-	Serial.println(throw_time2);
-	Serial.print(F("Travel time required: "));
-	Serial.println(travel_time);
-	Serial.print(F("Delay: "));
-	Serial.println(static_cast<uint32_t>(0.9*travel_time));
 	time_start=millis();
 	motorControl(true,direction); //motoring
 	delay(static_cast<uint32_t>(0.9*travel_time));
