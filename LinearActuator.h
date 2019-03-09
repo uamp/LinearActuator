@@ -10,6 +10,7 @@ private:
 	uint8_t pin_B;
 	//uint8_t pin_enable;
 	uint8_t pin_current_sense;
+	uint8_t pin_current_sense_disable;
 
 	uint16_t stall_current1;
 	uint16_t stall_current2;
@@ -27,16 +28,18 @@ private:
 	uint16_t readCurrent();
 
 public:
-	LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense);
+	LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense, uint8_t pinCurrentSenseDisable);
 	~LinearActuator();
 
-	void setPosition(uint8_t demanded_position); //0 being one end, 255 being the other
+	void setPosition(uint8_t demanded_position); //0 being one end, 100 being the other
 	uint8_t getPosition();
 	void getThrowResults(bool & timeout, uint32_t & throwTime, int16_t & finalCurrent); //final current sign dependant on direction
 	void calibrate();
-	void setStallCurrent(uint16_t stallCurrent1, uint16_t stallCurrent2); //out/in
+	void setStallCurrents(uint16_t stallCurrent1, uint16_t stallCurrent2); //out/in
+	void setStallCurrent(uint8_t stallCurrentSelect, uint16_t stallCurrent); //1 or 2
 	uint16_t getStallCurrent(uint8_t stallCurrentSelect); //1 or 2
-	void setThrowTime(uint32_t throwTime1, uint32_t throwTime2); //out/in
+	void setThrowTimes(uint32_t throwTime1, uint32_t throwTime2); //out/in
+	void setThrowTime(uint8_t throwTimeSelect, uint32_t throwTime); //1 or 2
   uint32_t getThrowTime(uint8_t throwTimeSelect); //1 or 2
 };
 
