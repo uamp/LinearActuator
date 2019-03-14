@@ -1,6 +1,10 @@
 #ifndef __LA_H_INCLUDED__
 #define __LA_H_INCLUDED__
 
+enum LAEepromAddress {LA_EEPROM_VERIFY=10,LA_EEPROM_TIME1=11, LA_EEPROM_TIME2=15, LA_EEPROM_CURRENT1=19, LA_EEPROM_CURRENT2=21, LA_EEPROM_POSITION=22};  //if this is changed, then you should change the verification code below
+#define LA_EEPROM_VERIFY_CODE 101
+//#define LA_WRITEPROTECT
+
 // OUT: motoring out 0->100 direction true (throwTime1 & stallCurrent1)
 // IN: motoring in 100->0 direction false (throwTime2 & stallCurrent2)
 
@@ -32,6 +36,7 @@ public:
 	~LinearActuator();
 
 	void setPosition(uint8_t demanded_position); //0 being one end, 100 being the other
+	void setupPosition(uint8_t position); //'sets' position without moving it (after chip reset etc) 0 being one end, 100 being the other
 	uint8_t getPosition();
 	void getThrowResults(bool & timeout, uint32_t & throwTime, int16_t & finalCurrent); //final current sign dependant on direction
 	void calibrate();
@@ -41,6 +46,9 @@ public:
 	void setThrowTimes(uint32_t throwTime1, uint32_t throwTime2); //out/in
 	void setThrowTime(uint8_t throwTimeSelect, uint32_t throwTime); //1 or 2
   uint32_t getThrowTime(uint8_t throwTimeSelect); //1 or 2
+
+	bool loadEeprom(); //returns true if verification code is correct
+	void setEeprom(); //set all variables to EEPROM
 };
 
 #endif // __LA_H_INCLUDED__

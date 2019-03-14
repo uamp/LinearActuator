@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "LinearActuator.h"
 #include <math.h>
+#include <EEPROM.h>
 
 
 LinearActuator::LinearActuator(uint8_t pinA, uint8_t pinB, uint8_t pinCurrentSense, uint8_t pinCurrentSenseDisable){
@@ -127,6 +128,10 @@ uint8_t LinearActuator::getPosition(){
 	return current_position;
 }
 
+void LinearActuator::setupPosition(uint8_t position){ //'sets' position without moving it (after chip reset etc) 0 being one end, 100 being the other
+	current_position=min(100,position);
+}
+
 void LinearActuator::calibrate(){    //if using battery, as battery drop, throw time will change, therefore calibrate from time to time
 
 	unsigned long time_start;
@@ -138,14 +143,14 @@ void LinearActuator::calibrate(){    //if using battery, as battery drop, throw 
 	motorControl(true,false); //motoring back
 	delay(motor_delay);
 	do{
-	}while(readCurrent() < stall_current2 && (millis()-time_start)<(1.2*throw_time2));
+	}while(readCurrent() < stall_current2 && (millis()-time_start)<(1.5*throw_time2));
 
 	//wind out and measure throw_time1
 	time_start=millis();
 	motorControl(true,true); //motoring out
 	delay(throw_time1/2);
 	do{
-	}while(readCurrent() < stall_current1 && (millis()-time_start)<(1.2*throw_time1));
+	}while(readCurrent() < stall_current1 && (millis()-time_start)<(1.5*throw_time1));
 	motorControl(false); //stop motor
 	throw_time1=millis()-time_start;
 
@@ -154,7 +159,7 @@ void LinearActuator::calibrate(){    //if using battery, as battery drop, throw 
 	motorControl(true,false); //motoring back in
 	delay(throw_time2/2);
 	do{
-	}while(readCurrent() < stall_current2 && (millis()-time_start)<(1.2*throw_time2));
+	}while(readCurrent() < stall_current2 && (millis()-time_start)<(1.5*throw_time2));
 	motorControl(false); //stop motor
 	throw_time2=millis()-time_start;
 
@@ -199,6 +204,29 @@ uint16_t LinearActuator::getStallCurrent(uint8_t stallCurrentSelect){
 	if(stallCurrentSelect==1) return stall_current1;
 	if(stallCurrentSelect==2) return stall_current2;
 
+}
+
+bool LinearActuator::loadEeprom(){
+	if(EEPROM.read(LA_EEPROM_VERIFY)==LA_EEPROM_VERIFY_CODE) {
+		EEPROM.get(LA_EEPROM_TIME1,throw_time1);
+		EEPROM.get(LA_EEPROM_TIME2,throw_time2);
+		EEPROM.get(LA_EEPROM_CURRENT1,stall_current1);
+		EEPROM.get(LA_EEPROM_CURRENT2,stall_current2);
+		EEPROM.get(LA_EEPROM_POSITION,current_position);
+	}
+	return (EEPROM.read(LA_EEPROM_VERIFY)==LA_EEPROM_VERIFY_CODE);
+	//this->begin();
+}
+
+void LinearActuator::setEeprom(){
+	#ifndef LA_WRITEPROTECT
+		EEPROM.put(LA_EEPROM_TIME1,throw_time1);
+		EEPROM.put(LA_EEPROM_TIME2,throw_time2);
+		EEPROM.put(LA_EEPROM_CURRENT1,stall_current1);
+		EEPROM.put(LA_EEPROM_CURRENT2,stall_current2);
+		EEPROM.put(LA_EEPROM_POSITION,current_position);
+		EEPROM.put(LA_EEPROM_VERIFY,LA_EEPROM_VERIFY_CODE);
+	#endif
 }
 
 LinearActuator::~LinearActuator(){
